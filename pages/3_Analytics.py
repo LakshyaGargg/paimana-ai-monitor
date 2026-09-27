@@ -12,15 +12,16 @@ from src.ui import apply_shared_styles, render_page_header
 
 PAGE_CSS = """
 <style>
-    .analytics-supporting { color: #66727F; font-size: 0.94rem; margin: 0.35rem 0 1rem; }
-    .analytics-filter-title { color: #17365D; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.025em; margin: 0 0 0.35rem; text-transform: uppercase; }
-    .analytics-context { color: #66727F; font-size: 0.84rem; margin: 0.8rem 0 0.45rem; }
-    .analytics-section-title { color: #102A43; font-size: 1.2rem; font-weight: 700; margin: 1.45rem 0 0.25rem; }
+    .analytics-supporting { color: #66727F; font-size: 0.94rem; margin: 0.1rem 0 0.45rem; }
+    .analytics-filter-title { color: #17365D; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.025em; margin: 0 0 0.3rem; text-transform: uppercase; }
+    .analytics-context { color: #66727F; font-size: 0.84rem; margin: 0 0 0.4rem; }
+    .analytics-section-title { color: #17365D; font-size: 1.18rem; font-weight: 700; margin: 1.05rem 0 0.2rem; }
     .analytics-section-note { color: #66727F; font-size: 0.84rem; margin: 0 0 0.65rem; }
-    .analytics-kpi { background: #FFFFFF; border: 1px solid #D9DEE5; border-top: 3px solid #17365D; border-radius: 5px; box-sizing: border-box; height: 112px; padding: 0.8rem 0.9rem; }
+    .analytics-kpi { background: #FFFFFF; border: 1px solid #D9DEE5; border-top: 3px solid #17365D; border-radius: 5px; box-sizing: border-box; height: 110px; padding: 0.8rem 0.9rem; }
     .analytics-kpi-label { color: #66727F; font-size: 0.73rem; font-weight: 700; letter-spacing: 0.03em; line-height: 1.3; margin: 0; text-transform: uppercase; }
     .analytics-kpi-value { color: #17365D; font-size: 1.28rem; font-weight: 750; line-height: 1.25; margin: 0.4rem 0 0; overflow-wrap: anywhere; }
     .analytics-coverage-note { background: #F2F4F7; border-left: 3px solid #D99024; color: #495765; font-size: 0.86rem; line-height: 1.45; margin-top: 0.7rem; padding: 0.65rem 0.8rem; }
+    [data-testid="stPlotlyChart"] { background: #FFFFFF; border: 1px solid #D9DEE5; border-radius: 5px; padding: 0.15rem 0.35rem 0.1rem; }
     [data-testid="stDataFrame"], [data-testid="stVerticalBlockBorderWrapper"] { background: #FFFFFF !important; border-color: #D9DEE5 !important; box-shadow: none !important; }
     [data-testid="stSelectbox"] div[role="group"], div[data-baseweb="select"] > div { background: #FFFFFF !important; border-color: #D9DEE5 !important; color: #1F2933 !important; }
     [data-testid="stSelectbox"] input, div[data-baseweb="select"] input, div[data-baseweb="select"] span { color: #1F2933 !important; -webkit-text-fill-color: #1F2933 !important; }
@@ -102,8 +103,8 @@ def _line_chart(
         )
     )
     figure.update_layout(
-        height=310,
-        margin={"l": 35, "r": 20, "t": 28, "b": 42},
+        height=290,
+        margin={"l": 35, "r": 18, "t": 24, "b": 40},
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
         font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"},
@@ -182,6 +183,7 @@ latest_original_cost = latest_snapshot["original_cost_cr"].sum(min_count=1)
 latest_expenditure = latest_snapshot["cumulative_expenditure_cr"].sum(min_count=1)
 latest_median_progress = latest_snapshot["physical_progress_pct"].median(skipna=True)
 
+_section("Latest Snapshot")
 st.markdown(
     f'<p class="analytics-context"><strong>Latest available reporting snapshot:</strong> '
     f'{html.escape(_month_label(latest_month))}</p>',
@@ -298,8 +300,8 @@ with physical_columns[1]:
         )
     distribution_figure.update_layout(
         barmode="stack",
-        height=310,
-        margin={"l": 35, "r": 20, "t": 20, "b": 42},
+        height=290,
+        margin={"l": 35, "r": 18, "t": 16, "b": 40},
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
         font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"},
@@ -314,27 +316,33 @@ _section(
 )
 composition_columns = st.columns(2 if selected_ministry == "All Ministries" else 1)
 composition_index = 0
+sector_counts = latest_snapshot.groupby("sector")["project_id"].nunique().sort_values()
 if selected_ministry == "All Ministries":
     ministry_counts = latest_snapshot.groupby("ministry")["project_id"].nunique().sort_values()
+    composition_height = max(
+        360,
+        min(620, 24 * max(len(ministry_counts), len(sector_counts)) + 80),
+    )
     with composition_columns[composition_index]:
         st.markdown("**Projects by Ministry**")
         ministry_figure = go.Figure(go.Bar(
             x=ministry_counts.tolist(), y=ministry_counts.index.tolist(), orientation="h",
             marker_color=NAVY, hovertemplate="%{y}<br>%{x:,} projects<extra></extra>",
         ))
-        ministry_figure.update_layout(height=max(360, min(680, 28 * len(ministry_counts) + 80)), margin={"l": 20, "r": 30, "t": 15, "b": 40}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, showlegend=False)
+        ministry_figure.update_layout(height=composition_height, margin={"l": 20, "r": 30, "t": 15, "b": 40}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, showlegend=False)
         ministry_figure.update_xaxes(title="Projects", gridcolor="#E7EAF0", zeroline=False)
         st.plotly_chart(ministry_figure, use_container_width=True, config=PLOT_CONFIG)
     composition_index += 1
 
-sector_counts = latest_snapshot.groupby("sector")["project_id"].nunique().sort_values()
+else:
+    composition_height = max(360, min(620, 24 * len(sector_counts) + 80))
 with composition_columns[composition_index]:
     st.markdown("**Projects by Sector**")
     sector_figure = go.Figure(go.Bar(
         x=sector_counts.tolist(), y=sector_counts.index.tolist(), orientation="h",
         marker_color=NAVY, hovertemplate="%{y}<br>%{x:,} projects<extra></extra>",
     ))
-    sector_figure.update_layout(height=max(360, min(680, 28 * len(sector_counts) + 80)), margin={"l": 20, "r": 30, "t": 15, "b": 40}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, showlegend=False)
+    sector_figure.update_layout(height=composition_height, margin={"l": 20, "r": 30, "t": 15, "b": 40}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, showlegend=False)
     sector_figure.update_xaxes(title="Projects", gridcolor="#E7EAF0", zeroline=False)
     st.plotly_chart(sector_figure, use_container_width=True, config=PLOT_CONFIG)
 
@@ -359,7 +367,7 @@ schedule = pd.DataFrame(schedule_rows)
 schedule_figure = go.Figure()
 schedule_figure.add_bar(name="Revised DoC Available", x=schedule["month"].map(_month_label), y=schedule["available"], marker_color=NAVY)
 schedule_figure.add_bar(name="Revised DoC Unavailable", x=schedule["month"].map(_month_label), y=schedule["unavailable"], marker_color="#AAB7C4")
-schedule_figure.update_layout(barmode="stack", height=320, margin={"l": 35, "r": 20, "t": 20, "b": 42}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, legend={"orientation": "h", "y": -0.18})
+schedule_figure.update_layout(barmode="stack", height=300, margin={"l": 35, "r": 18, "t": 16, "b": 40}, paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font={"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"}, legend={"orientation": "h", "y": -0.18})
 schedule_figure.update_yaxes(title="Projects", gridcolor="#E7EAF0", zeroline=False)
 st.plotly_chart(schedule_figure, use_container_width=True, config=PLOT_CONFIG)
 

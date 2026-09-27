@@ -1,3 +1,5 @@
+import html
+
 import streamlit as st
 
 
@@ -25,9 +27,9 @@ SHARED_CSS = """
         --paimana-secondary-text: #66727F;
         --paimana-border: #D9DEE5;
         --paimana-sidebar-text: #F2F4F7;
-        --paimana-sidebar-muted: #D5DEE8;
-        --paimana-sidebar-hover: #173B60;
-        --paimana-sidebar-selected: #1D466F;
+        --paimana-sidebar-muted: #D9DEE5;
+        --paimana-sidebar-hover: #17365D;
+        --paimana-sidebar-selected: #17365D;
     }
 
     .stApp {
@@ -40,12 +42,17 @@ SHARED_CSS = """
     }
 
     [data-testid="stHeader"] {
-        background: var(--paimana-background);
+        background: transparent;
+        height: 2.5rem;
     }
 
     [data-testid="stSidebar"] {
         background: var(--paimana-primary-dark);
-        border-right: 1px solid #244762;
+        border-right: 1px solid var(--paimana-primary);
+    }
+
+    [data-testid="stSidebarContent"] {
+        padding-top: 0.65rem;
     }
 
     [data-testid="stSidebar"] p,
@@ -62,10 +69,12 @@ SHARED_CSS = """
     }
 
     [data-testid="stSidebarNav"] a {
+        align-items: center;
         border-left: 3px solid transparent;
         border-radius: 4px;
         color: var(--paimana-sidebar-muted);
         margin: 0.15rem 0.5rem;
+        min-height: 2.55rem;
         transition: background-color 120ms ease, border-color 120ms ease;
     }
 
@@ -87,14 +96,19 @@ SHARED_CSS = """
     }
 
     [data-testid="stToolbarActions"],
+    [data-testid="stAppDeployButton"],
     #MainMenu {
         display: none;
     }
 
     .block-container {
-        max-width: 1180px;
-        padding-top: 2.5rem;
-        padding-bottom: 3rem;
+        max-width: 1220px;
+        padding-top: 3rem;
+        padding-bottom: 2.5rem;
+    }
+
+    .block-container > [data-testid="stVerticalBlock"] {
+        gap: 0.65rem;
     }
 
     .paimana-brand {
@@ -127,22 +141,25 @@ SHARED_CSS = """
     }
 
     .page-heading {
-        color: var(--paimana-primary-dark);
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin: 0 0 0.45rem;
+        color: var(--paimana-primary-dark) !important;
+        font-size: 1.9rem !important;
+        font-weight: 750 !important;
+        line-height: 1.15 !important;
+        margin: 0 0 0.28rem !important;
+        padding: 0 !important;
     }
 
     .page-introduction {
-        color: var(--paimana-secondary-text);
-        font-size: 1rem;
-        margin: 0;
+        color: var(--paimana-secondary-text) !important;
+        font-size: 0.95rem !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
     }
 
     .page-heading-rule {
         border: 0;
         border-top: 1px solid var(--paimana-border);
-        margin: 1.25rem 0 0;
+        margin: 0.7rem 0 0;
     }
 
     .login-institutional-header {
@@ -204,26 +221,36 @@ SHARED_CSS = """
         background: var(--paimana-surface);
         border-color: var(--paimana-border) !important;
         border-radius: 5px;
-        box-shadow: 0 4px 14px rgba(67, 53, 38, 0.07);
+        box-shadow: none;
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] > div {
-        padding: 0.2rem 0.35rem;
+        padding: 0.3rem 0.45rem;
+    }
+
+    [data-testid="stDataFrame"] {
+        background: var(--paimana-surface);
+        border: 1px solid var(--paimana-border);
+        border-radius: 4px;
+        overflow: hidden;
     }
 
     .stTextInput input {
-        background: #ffffff;
+        background: var(--paimana-surface);
         border: 1px solid var(--paimana-border);
-        border-radius: 3px;
+        border-radius: 4px;
         color: var(--paimana-text);
+        min-height: 2.55rem;
     }
 
     .stTextInput label,
     .stTextInput [data-testid="stWidgetLabel"] p,
+    .stSelectbox label,
+    .stSelectbox [data-testid="stWidgetLabel"] p,
     .stCheckbox label,
     .stCheckbox [data-testid="stWidgetLabel"] p {
         color: var(--paimana-text) !important;
-        font-size: 0.92rem;
+        font-size: 0.88rem;
         font-weight: 650;
     }
 
@@ -232,17 +259,80 @@ SHARED_CSS = """
         box-shadow: 0 0 0 1px var(--paimana-primary);
     }
 
-    .stButton > button[kind="primary"] {
-        background: var(--paimana-primary);
-        border: 1px solid var(--paimana-primary);
-        border-radius: 3px;
-        color: #ffffff;
-        font-weight: 650;
+    div[data-baseweb="select"] > div {
+        background: var(--paimana-surface) !important;
+        border-color: var(--paimana-border) !important;
+        border-radius: 4px !important;
+        color: var(--paimana-text) !important;
+        min-height: 2.55rem;
     }
 
-    .stButton > button[kind="primary"]:hover {
+    div[data-baseweb="select"]:focus-within > div {
+        border-color: var(--paimana-primary) !important;
+        box-shadow: 0 0 0 1px var(--paimana-primary) !important;
+    }
+
+    div[data-baseweb="select"] input,
+    div[data-baseweb="select"] span {
+        color: var(--paimana-text) !important;
+        -webkit-text-fill-color: var(--paimana-text) !important;
+    }
+
+    div[data-baseweb="select"] svg {
+        color: var(--paimana-primary) !important;
+        fill: var(--paimana-primary) !important;
+    }
+
+    div[role="listbox"],
+    div[role="option"] {
+        background: var(--paimana-surface) !important;
+        color: var(--paimana-text) !important;
+    }
+
+    div[role="option"]:hover,
+    div[role="option"][aria-selected="true"] {
+        background: var(--paimana-secondary-surface) !important;
+        color: var(--paimana-primary-dark) !important;
+    }
+
+    .stButton > button[kind="primary"],
+    .stDownloadButton > button[kind="primary"] {
+        background: var(--paimana-primary);
+        border: 1px solid var(--paimana-primary);
+        border-radius: 4px;
+        color: #ffffff;
+        font-weight: 650;
+        min-height: 2.5rem;
+    }
+
+    .stButton > button[kind="primary"]:hover,
+    .stDownloadButton > button[kind="primary"]:hover {
         background: var(--paimana-primary-dark);
         border-color: var(--paimana-primary-dark);
+        color: #ffffff;
+    }
+
+    .stButton > button[kind="secondary"],
+    .stDownloadButton > button[kind="secondary"] {
+        background: var(--paimana-surface);
+        border: 1px solid var(--paimana-border);
+        border-radius: 4px;
+        color: var(--paimana-primary);
+        font-weight: 650;
+        min-height: 2.5rem;
+    }
+
+    .stButton > button[kind="secondary"]:hover,
+    .stDownloadButton > button[kind="secondary"]:hover {
+        background: var(--paimana-secondary-surface);
+        border-color: var(--paimana-primary);
+        color: var(--paimana-primary-dark);
+    }
+
+    [data-testid="stCaptionContainer"] p {
+        color: var(--paimana-secondary-text);
+        font-size: 0.8rem;
+        line-height: 1.45;
     }
 
     .authorization-note {
@@ -267,8 +357,16 @@ SHARED_CSS = """
         color: #FFFFFF !important;
         font-size: 0.92rem;
         font-weight: 650;
-        margin-top: 2rem;
+        margin: 1.35rem 0 0;
         padding-top: 1rem;
+    }
+
+    .sidebar-account-email {
+        color: var(--paimana-sidebar-muted) !important;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        margin: 0.2rem 0 0.7rem;
+        overflow-wrap: anywhere;
     }
 
     [data-testid="stSidebar"] .stButton > button {
@@ -389,9 +487,15 @@ def render_page_header(title: str, introduction: str | None = None) -> None:
 
 def render_sidebar_account() -> bool:
     """Render the signed-in account label and return whether Logout was clicked."""
+    officer_email = st.session_state.get("paimana_officer_email")
+    email_html = (
+        f'<p class="sidebar-account-email">{html.escape(str(officer_email))}</p>'
+        if officer_email
+        else ""
+    )
     with st.sidebar:
         st.markdown(
-            '<p class="sidebar-account">Monitoring Officer</p>',
+            f'<p class="sidebar-account">Monitoring Officer</p>{email_html}',
             unsafe_allow_html=True,
         )
         return st.button("Logout", use_container_width=True)

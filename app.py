@@ -101,10 +101,11 @@ LOGIN_CSS = """
 
     .login-title {
         color: var(--login-primary-dark);
-        font-size: 1.65rem;
+        font-size: 1.4rem !important;
         font-weight: 700;
-        line-height: 1.2;
-        margin: 0 0 0.25rem;
+        line-height: 1.2 !important;
+        margin: 0 0 0.25rem !important;
+        padding: 0 !important;
         text-align: center;
     }
 
@@ -184,7 +185,7 @@ LOGIN_CSS = """
 HOME_CSS = """
 <style>
     .block-container > [data-testid="stVerticalBlock"] {
-        gap: 0.7rem;
+        gap: 0.6rem;
     }
 
     .page-heading {
@@ -210,14 +211,33 @@ HOME_CSS = """
     .home-overview-copy {
         color: #66727F;
         font-size: 0.94rem;
-        margin: -0.15rem 0 0.35rem;
+        margin: -0.2rem 0 0.25rem;
     }
 
     .home-section-title {
-        color: #102A43;
-        font-size: 1.15rem;
+        color: #17365D;
+        font-size: 1.18rem;
         font-weight: 700;
-        margin: 1rem 0 0.35rem;
+        line-height: 1.3;
+        margin: 0 0 0.45rem;
+        padding-top: 1rem;
+    }
+
+    .home-subsection-title,
+    .home-chart-title {
+        color: #102A43;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .home-subsection-title {
+        margin: 0 0 0.35rem;
+        padding-top: 0.65rem;
+    }
+
+    .home-chart-title {
+        margin: 0.05rem 0 0.35rem;
     }
 
     .home-filter-title {
@@ -235,7 +255,7 @@ HOME_CSS = """
         border-top: 3px solid #17365D;
         border-radius: 5px;
         box-sizing: border-box;
-        height: 126px;
+        height: 118px;
         padding: 0.8rem 1rem;
     }
 
@@ -264,10 +284,14 @@ HOME_CSS = """
     }
 
     .home-ratio-panel {
+        align-items: center;
         background: #FFFFFF;
         border: 1px solid #D9DEE5;
         border-left: 4px solid #D99024;
         border-radius: 5px;
+        display: grid;
+        gap: 0.3rem 1rem;
+        grid-template-columns: minmax(150px, auto) 1fr;
         padding: 0.9rem 1rem;
     }
 
@@ -283,7 +307,7 @@ HOME_CSS = """
         color: #66727F;
         font-size: 0.84rem;
         line-height: 1.45;
-        margin: 0.3rem 0 0;
+        margin: 0;
     }
 
     .home-chart-panel {
@@ -303,7 +327,7 @@ HOME_CSS = """
         background: #FFFFFF;
         border: 1px solid #D9DEE5;
         margin: -1px 0 0 -1px;
-        min-height: 88px;
+        min-height: 80px;
         padding: 0.75rem 0.85rem;
     }
 
@@ -380,9 +404,16 @@ HOME_CSS = """
         .home-coverage-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        .home-ratio-panel {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 """
+
+
+PLOT_CONFIG = {"displayModeBar": False, "responsive": True}
 
 
 @st.cache_data(show_spinner=False)
@@ -429,7 +460,7 @@ def _progress_band_counts(values: pd.Series) -> pd.Series:
     return counts
 
 
-def _base_chart_layout(height: int = 290) -> dict[str, object]:
+def _base_chart_layout(height: int = 270) -> dict[str, object]:
     return {
         "height": height,
         "margin": {"l": 30, "r": 20, "t": 12, "b": 38},
@@ -575,6 +606,10 @@ def home_page() -> None:
     revised_doc_available_count = int(revised_doc_available_mask.sum())
     revised_doc_unavailable_count = int(project_count - revised_doc_available_count)
 
+    st.markdown(
+        '<p class="home-section-title">Portfolio Snapshot</p>',
+        unsafe_allow_html=True,
+    )
     kpi_columns = st.columns(4)
     with kpi_columns[0]:
         _render_home_kpi("Ongoing Projects", f"{project_count:,}")
@@ -623,7 +658,11 @@ def home_page() -> None:
     )
     financial_figure.update_xaxes(tickfont={"color": "#1F2933"})
     with st.container(border=True):
-        st.plotly_chart(financial_figure, use_container_width=True)
+        st.plotly_chart(
+            financial_figure,
+            use_container_width=True,
+            config=PLOT_CONFIG,
+        )
         if not revised_available_count:
             st.caption(
                 "Project-level revised cost is unavailable for this reporting snapshot; "
@@ -631,7 +670,7 @@ def home_page() -> None:
             )
 
     st.markdown(
-        '<p class="home-section-title">Financial Expenditure Ratio</p>',
+        '<p class="home-subsection-title">Financial Expenditure Ratio</p>',
         unsafe_allow_html=True,
     )
     ratio = (
@@ -654,11 +693,15 @@ def home_page() -> None:
         unsafe_allow_html=True,
     )
 
+    st.markdown(
+        '<p class="home-section-title">Portfolio Distribution</p>',
+        unsafe_allow_html=True,
+    )
     progress_column, sector_column = st.columns(2)
     progress_counts = _progress_band_counts(snapshot["physical_progress_pct"])
     with progress_column:
         st.markdown(
-            '<p class="home-section-title">Physical Progress Distribution</p>',
+            '<p class="home-chart-title">Physical Progress Distribution</p>',
             unsafe_allow_html=True,
         )
         progress_figure = go.Figure(
@@ -672,12 +715,16 @@ def home_page() -> None:
                 hovertemplate="%{x}<br>%{y:,} projects<extra></extra>",
             )
         )
-        progress_figure.update_layout(**_base_chart_layout(height=320))
+        progress_figure.update_layout(**_base_chart_layout(height=420))
         progress_figure.update_yaxes(
             title="Projects", gridcolor="#E7EAF0", rangemode="tozero", zeroline=False
         )
         with st.container(border=True):
-            st.plotly_chart(progress_figure, use_container_width=True)
+            st.plotly_chart(
+                progress_figure,
+                use_container_width=True,
+                config=PLOT_CONFIG,
+            )
             if physical_unavailable_count:
                 st.caption(
                     f"Physical progress is unavailable for "
@@ -687,11 +734,11 @@ def home_page() -> None:
 
     with sector_column:
         st.markdown(
-            '<p class="home-section-title">Sector Breakdown</p>',
+            '<p class="home-chart-title">Sector Breakdown</p>',
             unsafe_allow_html=True,
         )
         sector_counts = snapshot["sector"].dropna().value_counts().sort_values()
-        sector_height = max(320, min(600, 30 * len(sector_counts) + 80))
+        sector_height = 420
         sector_figure = go.Figure(
             go.Bar(
                 x=sector_counts.tolist(),
@@ -710,7 +757,11 @@ def home_page() -> None:
         )
         sector_figure.update_yaxes(tickfont={"size": 11})
         with st.container(border=True):
-            st.plotly_chart(sector_figure, use_container_width=True)
+            st.plotly_chart(
+                sector_figure,
+                use_container_width=True,
+                config=PLOT_CONFIG,
+            )
 
     st.markdown(
         '<p class="home-section-title">Data Coverage</p>',

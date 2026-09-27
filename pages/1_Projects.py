@@ -15,14 +15,15 @@ from src.ui import apply_shared_styles, render_page_header
 PAGE_CSS = """
 <style>
     .projects-filter-title, .projects-section-title { color: #102A43; font-weight: 700; }
-    .projects-filter-title { font-size: 0.9rem; letter-spacing: 0.025em; margin: 1rem 0 0.35rem; text-transform: uppercase; }
-    .projects-section-title { font-size: 1.15rem; margin: 1.4rem 0 0.6rem; }
+    .projects-filter-title { color: #17365D; font-size: 0.9rem; letter-spacing: 0.025em; margin: 0.1rem 0 0.3rem; text-transform: uppercase; }
+    .projects-section-title { color: #17365D; font-size: 1.16rem; margin: 1.05rem 0 0.45rem; }
+    .projects-chart-title { color: #102A43; font-size: 0.98rem; font-weight: 700; margin: 0.15rem 0 0.2rem; }
     .projects-detail-panel { background: #FFFFFF; border: 1px solid #D9DEE5; border-left: 4px solid #17365D; border-radius: 5px; padding: 1rem 1.1rem; }
     .projects-detail-name { color: #102A43; font-size: 1.1rem; font-weight: 700; line-height: 1.4; margin: 0 0 0.85rem; }
     .projects-detail-grid { display: grid; gap: 0.75rem 1.25rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .projects-detail-label { color: #66727F; display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 0.2rem; text-transform: uppercase; }
     .projects-detail-value { color: #1F2933; display: block; font-size: 0.9rem; line-height: 1.45; overflow-wrap: anywhere; }
-    .projects-metric-card { background: #FFFFFF; border: 1px solid #D9DEE5; border-top: 3px solid #17365D; border-radius: 5px; box-sizing: border-box; min-height: 105px; padding: 0.8rem 0.9rem; }
+    .projects-metric-card { background: #FFFFFF; border: 1px solid #D9DEE5; border-top: 3px solid #17365D; border-radius: 5px; box-sizing: border-box; min-height: 108px; padding: 0.8rem 0.9rem; }
     .projects-metric-label { color: #66727F; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.03em; margin: 0; text-transform: uppercase; }
     .projects-metric-value { color: #17365D; font-size: 1.2rem; font-weight: 750; line-height: 1.3; margin: 0.42rem 0 0; overflow-wrap: anywhere; }
     .projects-source { border-top: 1px solid #D9DEE5; color: #66727F; font-size: 0.82rem; margin-top: 1.25rem; padding-top: 0.7rem; }
@@ -36,6 +37,8 @@ PAGE_CSS = """
     @media (max-width: 900px) { .projects-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 """
+
+PLOT_CONFIG = {"displayModeBar": False, "responsive": True}
 
 
 @st.cache_data(show_spinner=False)
@@ -96,8 +99,8 @@ def _render_metric(label: str, value: str) -> None:
 
 def _chart_layout(y_title: str) -> dict[str, object]:
     return {
-        "height": 300,
-        "margin": {"l": 35, "r": 20, "t": 20, "b": 45},
+        "height": 285,
+        "margin": {"l": 35, "r": 18, "t": 12, "b": 42},
         "paper_bgcolor": "#FFFFFF",
         "plot_bgcolor": "#FFFFFF",
         "font": {"family": "Segoe UI, Arial, sans-serif", "color": "#1F2933"},
@@ -264,36 +267,46 @@ expenditure_history = project_history.dropna(subset=["cumulative_expenditure_cr"
 progress_history = project_history.dropna(subset=["physical_progress_pct"])
 trend_columns = st.columns(2)
 with trend_columns[0]:
-    st.markdown('<p class="projects-section-title">Cumulative Expenditure Trend</p>', unsafe_allow_html=True)
-    if len(expenditure_history) >= 2:
-        expenditure_figure = go.Figure(go.Scatter(
-            x=expenditure_history["report_month"].map(_month_label),
-            y=expenditure_history["cumulative_expenditure_cr"],
-            mode="lines+markers",
-            line={"color": "#17365D", "width": 2},
-            marker={"color": "#D99024", "size": 7},
-            hovertemplate="%{x}<br>₹%{y:,.2f} crore<extra></extra>",
-        ))
-        expenditure_figure.update_layout(**_chart_layout("₹ crore"))
-        st.plotly_chart(expenditure_figure, use_container_width=True)
-    else:
-        st.caption("A trend requires at least two reported expenditure observations.")
+    with st.container(border=True):
+        st.markdown('<p class="projects-chart-title">Cumulative Expenditure Trend</p>', unsafe_allow_html=True)
+        if len(expenditure_history) >= 2:
+            expenditure_figure = go.Figure(go.Scatter(
+                x=expenditure_history["report_month"].map(_month_label),
+                y=expenditure_history["cumulative_expenditure_cr"],
+                mode="lines+markers",
+                line={"color": "#17365D", "width": 2},
+                marker={"color": "#D99024", "size": 7},
+                hovertemplate="%{x}<br>₹%{y:,.2f} crore<extra></extra>",
+            ))
+            expenditure_figure.update_layout(**_chart_layout("₹ crore"))
+            st.plotly_chart(
+                expenditure_figure,
+                use_container_width=True,
+                config=PLOT_CONFIG,
+            )
+        else:
+            st.caption("A trend requires at least two reported expenditure observations.")
 
 with trend_columns[1]:
-    st.markdown('<p class="projects-section-title">Physical Progress Trend</p>', unsafe_allow_html=True)
-    if len(progress_history) >= 2:
-        progress_figure = go.Figure(go.Scatter(
-            x=progress_history["report_month"].map(_month_label),
-            y=progress_history["physical_progress_pct"],
-            mode="lines+markers",
-            line={"color": "#17365D", "width": 2},
-            marker={"color": "#D99024", "size": 7},
-            hovertemplate="%{x}<br>%{y:,.2f}%<extra></extra>",
-        ))
-        progress_figure.update_layout(**_chart_layout("Reported progress (%)"))
-        st.plotly_chart(progress_figure, use_container_width=True)
-    else:
-        st.caption("A trend requires at least two reported progress observations.")
+    with st.container(border=True):
+        st.markdown('<p class="projects-chart-title">Physical Progress Trend</p>', unsafe_allow_html=True)
+        if len(progress_history) >= 2:
+            progress_figure = go.Figure(go.Scatter(
+                x=progress_history["report_month"].map(_month_label),
+                y=progress_history["physical_progress_pct"],
+                mode="lines+markers",
+                line={"color": "#17365D", "width": 2},
+                marker={"color": "#D99024", "size": 7},
+                hovertemplate="%{x}<br>%{y:,.2f}%<extra></extra>",
+            ))
+            progress_figure.update_layout(**_chart_layout("Reported progress (%)"))
+            st.plotly_chart(
+                progress_figure,
+                use_container_width=True,
+                config=PLOT_CONFIG,
+            )
+        else:
+            st.caption("A trend requires at least two reported progress observations.")
 
 st.markdown(
     f'<p class="projects-source"><strong>Source:</strong> {_safe(selected_project["source_report"])}</p>',
